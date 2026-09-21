@@ -57,17 +57,23 @@ resource "aws_security_group" "my_security_group" {
 
 # EC2 instance
 resource "aws_instance" "my_instance" {
+  # count = 3 // meta argumet
+  for_each = tomap({
+    my-instance-1 = "t2.micro",
+    my-instance-2 = "t2.medium"
+  })                                                                            // meta agrument
+  depends_on      = [aws_security_group.my_security_group, aws_key_pair.my_key] // meta arguments
   key_name        = aws_key_pair.my_key.key_name
   security_groups = [aws_security_group.my_security_group.name]
-  instance_type   = var.ec2_instance_type
+  instance_type   = each.value
   ami             = var.ec2_ami_id
   user_data       = file("install_nginx.sh")
   root_block_device {
-    volume_size = var.ec2_root_storage_size
+    volume_size = var.env == "prod" ? 20 : var.ec2_default_root_storage_size
     volume_type = "gp3"
   }
 
   tags = {
-    Name = "terraform-automate-instance"
+    Name = each.key
   }
 }
